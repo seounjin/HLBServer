@@ -110,8 +110,8 @@ def worldCrawling():
 
 
 # 24시간마다 실행
-#sched.add_job(worldCrawling, 'interval', minutes=240)
-sched.add_job(worldCrawling, 'interval', seconds=20)
+sched.add_job(worldCrawling, 'interval', minutes=240)
+#sched.add_job(worldCrawling, 'interval', seconds=20)
 sched.start()
 
 def monthTrans(mon):
