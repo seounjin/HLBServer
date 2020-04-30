@@ -3,11 +3,33 @@ from bs4 import BeautifulSoup
 import requests
 import database
 import timeDatabase
+from apscheduler.schedulers.background import BackgroundScheduler
+
 
 app = Flask(__name__)
 
 
+sched = BackgroundScheduler(daemon=True)
+
+
 @app.route('/world')
+def world():
+    db = database.Database()
+    db.connectDb()
+    worldInfo = db.executeAll()
+    db.closeDb()
+
+    timeDb = timeDatabase.TimeDatabase()
+    timeDb.connectDb()
+
+    timeInfo = timeDb.executeAll()
+    timeDb.closeDb()
+
+    json = {"time": timeInfo, "world": worldInfo}
+
+    return jsonify(json)
+
+
 def worldCrawling():
     doc = requests.get("https://www.worldometers.info/coronavirus/")
     soup = BeautifulSoup(doc.text, "html.parser")
@@ -63,7 +85,6 @@ def worldCrawling():
     for data in worldData:
         db.insertDb(data[0], data[1], data[2], data[3])
 
-    worldInfo = db.executeAll()
     db.closeDb()
 
     timeDb = timeDatabase.TimeDatabase()
@@ -84,15 +105,14 @@ def worldCrawling():
     '''
 
     timeDb.insertDb(year, month, day, time)
-    timeInfo = timeDb.executeAll()
     timeDb.closeDb()
 
 
-    json = {"time":timeInfo,"world":worldInfo}
-    return jsonify(json)
 
-
-
+# 24시간마다 실행
+#sched.add_job(worldCrawling, 'interval', minutes=240)
+sched.add_job(worldCrawling, 'interval', seconds=20)
+sched.start()
 
 def monthTrans(mon):
     if mon == "January":
